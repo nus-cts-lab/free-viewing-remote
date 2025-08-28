@@ -1,0 +1,1159 @@
+/**
+ * DataManager - Handles data collection and export for single-round experiment
+ * Updated for stimuli-config.json structure without round tracking
+ */
+
+class DataManager {
+    constructor() {
+        this.participantData = {
+            participant_id: this.generateParticipantId(),
+            session: '001',
+            email: '',
+            date: new Date().toISOString(),
+            screen_resolution: `${screen.width}x${screen.height}`,
+            viewport_size: `${window.innerWidth}x${window.innerHeight}`,
+            device_pixel_ratio: window.devicePixelRatio || 1,
+            user_agent: navigator.userAgent,
+            platform: navigator.platform
+        };
+        
+        this.trialData = [];
+        this.mouseTrackingData = [];
+        this.experimentStartTime = null;
+        this.currentTrialStartTime = null;
+        this.currentTrialStartUnixTime = null;
+        
+        console.log('DataManager initialized for single-round experiment, participant:', this.participantData.participant_id);
+    }
+    
+    generateParticipantId() {
+        // Generate 6-digit random ID similar to PsychoPy version
+        return Math.floor(Math.random() * 999999).toString().padStart(6, '0');
+    }
+    
+    setParticipantInfo(participantId, session = '001', email = '') {
+        this.participantData.participant_id = participantId;
+        this.participantData.session = session;
+        this.participantData.email = email;
+        console.log('Participant info updated:', participantId, email, session);
+    }
+    
+    startExperiment() {
+        this.experimentStartTime = performance.now();
+        this.participantData.experiment_start_time = new Date().toISOString();
+        console.log('Single-round experiment started at:', this.participantData.experiment_start_time);
+    }
+    
+    startTrial(trialIndex, trialType = 'image') {
+        this.currentTrialStartTime = performance.now();
+        this.currentTrialStartUnixTime = Date.now();
+        return {
+            trialIndex: trialIndex,
+            trialType: trialType,
+            startTime: this.currentTrialStartTime,
+            startUnixTime: this.currentTrialStartUnixTime,
+            relativeStartTime: this.currentTrialStartTime - this.experimentStartTime
+        };
+    }
+    
+    endTrial() {
+        if (!this.currentTrialStartTime) {
+            console.warn('endTrial called without startTrial');
+            return null;
+        }
+        
+        const endTime = performance.now();
+        const duration = endTime - this.currentTrialStartTime;
+        
+        return {
+            endTime: endTime,
+            duration: duration
+        };
+    }
+    
+    /**
+     * Record trial data for single-round system
+     */
+    recordTrialData(trialInfo, imageData, mouseData = null) {
+        const timing = this.endTrial();
+        
+        if (!timing) {
+            console.error('Could not record trial data - no timing information');
+            return;
+        }
+        
+        console.log('=== RECORDING TRIAL DATA ===');
+        console.log('trialInfo:', trialInfo);
+        console.log('imageData:', imageData);
+        
+        // Create trial record
+        const trialRecord = {
+            // Trial tracking (1-20)
+            trial_idx: trialInfo.trialIndex + 1, // 1-based indexing
+            
+            // Trial classification
+            trial_type: trialInfo.trialType || 'image', // 'image' or 'filler'
+            
+            // Image fields for image trials (dysphoric, threat, positive, neutral)
+            img_dysphoric: '',
+            img_threat: '',
+            img_positive: '', 
+            img_neutral: '', // Neutral image for image trials
+            
+            // Position fields for image trials
+            position_dysphoric: '',
+            position_threat: '',
+            position_positive: '',
+            position_neutral: '',
+            
+            // Filler trial fields (4 fillers for filler trials)
+            filler_1: '',
+            filler_2: '',
+            filler_3: '',
+            filler_4: '',
+            
+            // Filler position fields
+            position_filler_1: '',
+            position_filler_2: '',
+            position_filler_3: '',
+            position_filler_4: '',
+            
+            // Timing information
+            trial_start_time: new Date(Date.now() - (performance.now() - trialInfo.startTime)).toISOString(),
+            trial_end_time: new Date().toISOString(),
+            trial_duration_ms: timing.duration,
+            trialStart_relative_to_exptStart_ms: trialInfo.relativeStartTime,
+            
+            // Additional metadata
+            viewport_width: window.innerWidth,
+            viewport_height: window.innerHeight
+        };
+        
+        // Populate image fields based on trial type and new data structure
+        if (trialInfo.trialType === 'image') {
+            console.log('Processing IMAGE trial - 4 categories');
+            
+            // For image trials: 1 dysphoric, 1 threat, 1 positive, 1 neutral
+            trialRecord.img_dysphoric = imageData.dysphoric || '';
+            trialRecord.img_threat = imageData.threat || '';
+            trialRecord.img_positive = imageData.positive || '';
+            trialRecord.img_neutral = imageData.neutral || '';
+            
+            // Positions for image trials
+            if (imageData.positions) {
+                trialRecord.position_dysphoric = imageData.positions.dysphoric || '';
+                trialRecord.position_threat = imageData.positions.threat || '';
+                trialRecord.position_positive = imageData.positions.positive || '';
+                trialRecord.position_neutral = imageData.positions.neutral || '';
+            }
+            
+            console.log('Image trial populated:', {
+                dysphoric: trialRecord.img_dysphoric,
+                threat: trialRecord.img_threat,
+                positive: trialRecord.img_positive,
+                neutral: trialRecord.img_neutral
+            });
+            
+        } else if (trialInfo.trialType === 'filler') {
+            console.log('Processing FILLER trial - 4 fillers');
+            
+            // For filler trials: 4 different filler images
+            trialRecord.filler_1 = imageData.filler1 || '';
+            trialRecord.filler_2 = imageData.filler2 || '';
+            trialRecord.filler_3 = imageData.filler3 || '';
+            trialRecord.filler_4 = imageData.filler4 || '';
+            
+            // Positions for filler trials
+            if (imageData.positions) {
+                trialRecord.position_filler_1 = imageData.positions.filler1 || '';
+                trialRecord.position_filler_2 = imageData.positions.filler2 || '';
+                trialRecord.position_filler_3 = imageData.positions.filler3 || '';
+                trialRecord.position_filler_4 = imageData.positions.filler4 || '';
+            }
+            
+            console.log('Filler trial populated:', {
+                filler1: trialRecord.filler_1,
+                filler2: trialRecord.filler_2,
+                filler3: trialRecord.filler_3,
+                filler4: trialRecord.filler_4
+            });
+        }
+        
+        // Add mouse tracking summary if available
+        if (mouseData && mouseData.length > 0) {
+            trialRecord.mouse_data_points = mouseData.length;
+            
+            // Calculate mouse movement statistics
+            const validPoints = mouseData.filter(point => 
+                point && 
+                typeof point.x === 'number' && !isNaN(point.x) && 
+                typeof point.y === 'number' && !isNaN(point.y)
+            );
+            
+            if (validPoints.length > 0) {
+                trialRecord.avg_mouse_x = Math.round(validPoints.reduce((sum, point) => sum + point.x, 0) / validPoints.length);
+                trialRecord.avg_mouse_y = Math.round(validPoints.reduce((sum, point) => sum + point.y, 0) / validPoints.length);
+                
+                // Calculate movement distance
+                let totalDistance = 0;
+                for (let i = 1; i < validPoints.length; i++) {
+                    const dx = validPoints[i].x - validPoints[i-1].x;
+                    const dy = validPoints[i].y - validPoints[i-1].y;
+                    totalDistance += Math.sqrt(dx*dx + dy*dy);
+                }
+                trialRecord.total_mouse_distance = Math.round(totalDistance);
+                
+            } else {
+                trialRecord.avg_mouse_x = 0;
+                trialRecord.avg_mouse_y = 0;
+                trialRecord.total_mouse_distance = 0;
+            }
+            
+            // Calculate time spent in each quadrant (legacy)
+            const quadrantTimes = this.calculateQuadrantTimes(mouseData);
+            trialRecord.time_top_left = quadrantTimes.topLeft;
+            trialRecord.time_top_right = quadrantTimes.topRight;
+            trialRecord.time_bottom_left = quadrantTimes.bottomLeft;
+            trialRecord.time_bottom_right = quadrantTimes.bottomRight;
+            
+            // NEW: Calculate time spent on each specific image
+            const imageTimes = this.calculateImageViewingTimes(mouseData, imageData, trialInfo.trialType);
+            
+            // Add image-specific timing data to trial record
+            // Pre-define ALL possible time_on_* columns for consistent CSV structure
+            trialRecord.time_on_dysphoric = 0;
+            trialRecord.time_on_threat = 0;
+            trialRecord.time_on_positive = 0;
+            trialRecord.time_on_filler = 0;
+            trialRecord.time_on_filler_1 = 0;
+            trialRecord.time_on_filler_2 = 0;
+            trialRecord.time_on_filler_3 = 0;
+            trialRecord.time_on_filler_4 = 0;
+            
+            // Populate only the relevant columns based on trial type
+            if (trialInfo.trialType === 'image') {
+                trialRecord.time_on_dysphoric = imageTimes.dysphoric || 0;
+                trialRecord.time_on_threat = imageTimes.threat || 0;
+                trialRecord.time_on_positive = imageTimes.positive || 0;
+                trialRecord.time_on_filler = imageTimes.filler || 0;
+            } else if (trialInfo.trialType === 'filler') {
+                trialRecord.time_on_filler_1 = imageTimes.filler1 || 0;
+                trialRecord.time_on_filler_2 = imageTimes.filler2 || 0;
+                trialRecord.time_on_filler_3 = imageTimes.filler3 || 0;
+                trialRecord.time_on_filler_4 = imageTimes.filler4 || 0;
+            }
+            
+        } else {
+            // Default values when no mouse data
+            trialRecord.mouse_data_points = 0;
+            trialRecord.avg_mouse_x = 0;
+            trialRecord.avg_mouse_y = 0;
+            trialRecord.total_mouse_distance = 0;
+            trialRecord.time_top_left = 0;
+            trialRecord.time_top_right = 0;
+            trialRecord.time_bottom_left = 0;
+            trialRecord.time_bottom_right = 0;
+            
+            // Pre-define ALL possible time_on_* columns for consistent CSV structure
+            trialRecord.time_on_dysphoric = 0;
+            trialRecord.time_on_threat = 0;
+            trialRecord.time_on_positive = 0;
+            trialRecord.time_on_neutral = 0;
+            trialRecord.time_on_filler_1 = 0;
+            trialRecord.time_on_filler_2 = 0;
+            trialRecord.time_on_filler_3 = 0;
+            trialRecord.time_on_filler_4 = 0;
+        }
+        
+        this.trialData.push(trialRecord);
+        
+        console.log(`Trial ${trialRecord.trial_idx} recorded`);
+        console.log('Total trials recorded:', this.trialData.length);
+        console.log('=== END RECORDING TRIAL DATA ===');
+    }
+    
+    /**
+     * Record detailed mouse tracking data
+     */
+    recordMouseData(mouseData, trialIndex, trialType) {
+        // Use stored Unix timestamp from trial start (eliminates 3ms calculation delay)
+        const trialStartUnixTime = this.currentTrialStartUnixTime;
+        if (!mouseData || mouseData.length === 0) {
+            console.log('No mouse data to record for trial', trialIndex + 1);
+            return;
+        }
+        
+        console.log(`Recording ${mouseData.length} mouse data points for trial ${trialIndex + 1}`);
+        
+        mouseData.forEach((point, pointIndex) => {
+            if (point && typeof point.x === 'number' && typeof point.y === 'number') {
+                
+                // Calculate movement metrics
+                let velocity = 0;
+                let distanceFromPrevious = 0;
+                
+                if (pointIndex > 0) {
+                    const prevPoint = mouseData[pointIndex - 1];
+                    if (prevPoint && typeof prevPoint.x === 'number' && typeof prevPoint.y === 'number') {
+                        // Calculate distance (pixels)
+                        const dx = point.x - prevPoint.x;
+                        const dy = point.y - prevPoint.y;
+                        distanceFromPrevious = Math.sqrt(dx * dx + dy * dy);
+                        
+                        // Calculate velocity (pixels/millisecond)
+                        const currentTime = point.time || 0;
+                        const prevTime = prevPoint.time || 0;
+                        const timeDiff = currentTime - prevTime;
+                        
+                        if (timeDiff > 0) {
+                            velocity = distanceFromPrevious / timeDiff;
+                        }
+                    }
+                }
+                
+                const mouseRecord = {
+                    // Trial identification
+                    trial_idx: trialIndex + 1,
+                    trial_type: trialType,
+                    
+                    // Point identification
+                    point_index: pointIndex + 1,
+                    
+                    // Mouse position
+                    mouse_x: Math.round(point.x),
+                    mouse_y: Math.round(point.y),
+                    
+                    // Timing - FIXED to use actual MouseView time
+                    point_absolute_time: trialStartUnixTime ? 
+                        new Date(trialStartUnixTime + (point.time || 0)).toISOString() :
+                        new Date(point.timestamp || Date.now()).toISOString(),
+                    time_elapsed_since_trialStart_ms: point.time || 0,
+                    
+                    // Screen quadrant
+                    quadrant: this.getQuadrant(point.x, point.y),
+                    
+                    // Movement metrics - CALCULATED from actual data
+                    velocity: Math.round(velocity * 1000) / 1000,  // Round to 3 decimal places
+                    distance_from_previous: Math.round(distanceFromPrevious * 100) / 100  // Round to 2 decimal places
+                };
+                
+                this.mouseTrackingData.push(mouseRecord);
+            }
+        });
+        
+        console.log(`Mouse tracking data recorded. Total points: ${this.mouseTrackingData.length}`);
+    }
+    
+    /**
+     * Calculate time spent in each screen quadrant using actual timestamps
+     */
+    calculateQuadrantTimes(mouseData) {
+        const quadrantTimes = {
+            topLeft: 0,
+            topRight: 0,
+            bottomLeft: 0,
+            bottomRight: 0
+        };
+        
+        if (!mouseData || mouseData.length < 2) {
+            console.warn('Insufficient mouse data for quadrant timing calculation');
+            return quadrantTimes;
+        }
+        
+        const centerX = window.innerWidth / 2;
+        const centerY = window.innerHeight / 2;
+        
+        // Use actual timestamps to calculate time intervals between points
+        for (let i = 0; i < mouseData.length - 1; i++) {
+            const currentPoint = mouseData[i];
+            const nextPoint = mouseData[i + 1];
+            
+            // Validate current point and timestamps
+            if (currentPoint && nextPoint && 
+                typeof currentPoint.x === 'number' && typeof currentPoint.y === 'number' &&
+                currentPoint.time !== undefined && nextPoint.time !== undefined) {
+                
+                // Calculate actual time interval until next point
+                const timeInterval = nextPoint.time - currentPoint.time;
+                
+                // Only count positive intervals (handle potential timestamp issues)
+                if (timeInterval > 0) {
+                    // Assign time to quadrant based on current position
+                    if (currentPoint.x < centerX && currentPoint.y < centerY) {
+                        quadrantTimes.topLeft += timeInterval;
+                    } else if (currentPoint.x >= centerX && currentPoint.y < centerY) {
+                        quadrantTimes.topRight += timeInterval;
+                    } else if (currentPoint.x < centerX && currentPoint.y >= centerY) {
+                        quadrantTimes.bottomLeft += timeInterval;
+                    } else {
+                        quadrantTimes.bottomRight += timeInterval;
+                    }
+                } else {
+                    console.warn(`Invalid time interval at point ${i}: ${timeInterval}ms`);
+                }
+            } else {
+                console.warn(`Invalid point data at index ${i}:`, {
+                    currentPoint: currentPoint,
+                    nextPoint: nextPoint,
+                    hasCurrentTime: currentPoint?.time !== undefined,
+                    hasNextTime: nextPoint?.time !== undefined
+                });
+            }
+        }
+        
+        // Calculate total for validation
+        const totalTime = quadrantTimes.topLeft + quadrantTimes.topRight + 
+                         quadrantTimes.bottomLeft + quadrantTimes.bottomRight;
+        
+        // Log timing analysis for debugging
+        console.log('=== QUADRANT TIMING ANALYSIS ===');
+        console.log(`Mouse data points: ${mouseData.length}`);
+        console.log(`Valid intervals calculated: ${Math.round((mouseData.length - 1) * (totalTime / (totalTime || 1)))}`);
+        console.log(`Total calculated time: ${Math.round(totalTime)}ms`);
+        console.log(`Expected trial duration: 10000ms`);
+        console.log(`Timing accuracy: ${totalTime > 0 ? Math.round((totalTime / 10000) * 100) : 0}%`);
+        
+        if (mouseData.length > 1) {
+            const firstTime = mouseData[0]?.time || 0;
+            const lastTime = mouseData[mouseData.length - 1]?.time || 0;
+            const actualTrialDuration = lastTime - firstTime;
+            console.log(`MouseView trial duration: ${Math.round(actualTrialDuration)}ms`);
+            console.log(`Sample rate: ${Math.round(mouseData.length / (actualTrialDuration / 1000))} Hz`);
+        }
+        console.log('=== END TIMING ANALYSIS ===');
+        
+        // Round to nearest millisecond
+        Object.keys(quadrantTimes).forEach(key => {
+            quadrantTimes[key] = Math.round(quadrantTimes[key]);
+        });
+        
+        return quadrantTimes;
+    }
+    
+    /**
+     * Calculate time spent viewing each specific image based on mouse position and image bounds
+     * This provides more precise timing than quadrant-based calculation
+     */
+    calculateImageViewingTimes(mouseData, imageData, trialType) {
+        const imageTimes = {};
+        
+        if (!mouseData || mouseData.length === 0) {
+            // Return zero times for all images
+            if (trialType === 'image') {
+                return { dysphoric: 0, threat: 0, positive: 0, filler: 0 };
+            } else if (trialType === 'filler') {
+                return { filler1: 0, filler2: 0, filler3: 0, filler4: 0 };
+            }
+            return {};
+        }
+        
+        // Get current image positions and sizes from the DOM
+        const imageContainer = document.getElementById('image-container');
+        if (!imageContainer) {
+            console.warn('Image container not found for timing calculation');
+            return imageTimes;
+        }
+        
+        const imageElements = {
+            'top-left': imageContainer.querySelector('#top-left-image'),
+            'top-right': imageContainer.querySelector('#top-right-image'),
+            'bottom-left': imageContainer.querySelector('#bottom-left-image'),
+            'bottom-right': imageContainer.querySelector('#bottom-right-image')
+        };
+        
+        // Get bounding rectangles for each image
+        const imageBounds = {};
+        Object.entries(imageElements).forEach(([position, element]) => {
+            if (element && element.style.display !== 'none') {
+                const rect = element.getBoundingClientRect();
+                imageBounds[position] = {
+                    left: rect.left,
+                    right: rect.right,
+                    top: rect.top,
+                    bottom: rect.bottom
+                };
+            }
+        });
+        
+        // Map image categories to their positions
+        const imagePositionMap = {};
+        if (trialType === 'image' && imageData.positions) {
+            imagePositionMap[imageData.positions.dysphoric] = 'dysphoric';
+            imagePositionMap[imageData.positions.threat] = 'threat';
+            imagePositionMap[imageData.positions.positive] = 'positive';
+            imagePositionMap[imageData.positions.filler] = 'filler';
+        } else if (trialType === 'filler' && imageData.positions) {
+            imagePositionMap[imageData.positions.filler1] = 'filler1';
+            imagePositionMap[imageData.positions.filler2] = 'filler2';
+            imagePositionMap[imageData.positions.filler3] = 'filler3';
+            imagePositionMap[imageData.positions.filler4] = 'filler4';
+        }
+        
+        // Initialize timing counters
+        Object.values(imagePositionMap).forEach(imageName => {
+            imageTimes[imageName] = 0;
+        });
+        
+        // Use actual timestamps to calculate time intervals (consistent with quadrant calculation)
+        for (let i = 0; i < mouseData.length - 1; i++) {
+            const currentPoint = mouseData[i];
+            const nextPoint = mouseData[i + 1];
+            
+            // Validate current point and timestamps
+            if (currentPoint && nextPoint && 
+                typeof currentPoint.x === 'number' && typeof currentPoint.y === 'number' &&
+                currentPoint.time !== undefined && nextPoint.time !== undefined) {
+                
+                // Calculate actual time interval until next point
+                const timeInterval = nextPoint.time - currentPoint.time;
+                
+                // Only count positive intervals
+                if (timeInterval > 0) {
+                    // Check which image (if any) the mouse is over
+                    Object.entries(imageBounds).forEach(([position, bounds]) => {
+                        const imageName = imagePositionMap[position];
+                        if (imageName && 
+                            currentPoint.x >= bounds.left && currentPoint.x <= bounds.right &&
+                            currentPoint.y >= bounds.top && currentPoint.y <= bounds.bottom) {
+                            imageTimes[imageName] += timeInterval;
+                        }
+                    });
+                }
+            }
+        }
+        
+        // Round to nearest millisecond
+        Object.keys(imageTimes).forEach(key => {
+            imageTimes[key] = Math.round(imageTimes[key]);
+        });
+        
+        console.log('Image viewing times calculated:', imageTimes);
+        
+        return imageTimes;
+    }
+    
+    /**
+     * Get screen quadrant for mouse position
+     */
+    getQuadrant(x, y) {
+        const centerX = window.innerWidth / 2;
+        const centerY = window.innerHeight / 2;
+        
+        if (x < centerX && y < centerY) return 'top-left';
+        if (x >= centerX && y < centerY) return 'top-right';
+        if (x < centerX && y >= centerY) return 'bottom-left';
+        return 'bottom-right';
+    }
+    
+    /**
+     * Get trial data for analysis
+     */
+    getTrialData() {
+        return this.trialData;
+    }
+    
+    /**
+     * Get mouse tracking data for analysis
+     */
+    getMouseData() {
+        return this.mouseTrackingData;
+    }
+    
+    
+    /**
+     * Get summary statistics for the experiment
+     */
+    getSummaryStats() {
+        const totalTrials = this.trialData.length;
+        const imageTrials = this.trialData.filter(t => t.trial_type === 'image').length;
+        const fillerTrials = this.trialData.filter(t => t.trial_type === 'filler').length;
+        const totalMousePoints = this.mouseTrackingData.length;
+        
+        return {
+            participant_id: this.participantData.participant_id,
+            total_trials: totalTrials,
+            image_trials: imageTrials,
+            filler_trials: fillerTrials,
+            total_mouse_points: totalMousePoints,
+            experiment_duration: this.experimentStartTime ? 
+                Math.round((performance.now() - this.experimentStartTime) / 1000) + ' seconds' : 'Not started'
+        };
+    }
+    
+    /**
+     * Export trial data as CSV (original download method)
+     */
+    exportTrialData() {
+        const csvContent = this.generateTrialCSVContent();
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `trial_data_ppt${this.participantData.participant_id}_s${this.participantData.session}_${timestamp}.csv`;
+        
+        this.downloadCSV(csvContent, filename);
+        console.log(`Trial data exported: ${filename}`);
+    }
+
+    /**
+     * Generate trial data CSV content (for both download and upload)
+     */
+    generateTrialCSVContent() {
+        if (this.trialData.length === 0) {
+            console.warn('No trial data to generate');
+            return 'No data available\n';
+        }
+        
+        // Get all field names from the first trial record (excluding internal fields)
+        const sampleRecord = this.trialData[0];
+        const fieldNames = Object.keys(sampleRecord).filter(key => !key.startsWith('_'));
+        
+        // Create CSV header
+        const csvHeader = fieldNames.join(',');
+        
+        // Create CSV rows
+        const csvRows = this.trialData.map(record => {
+            return fieldNames.map(field => {
+                const value = record[field];
+                // Handle string values that might contain commas
+                if (typeof value === 'string' && value.includes(',')) {
+                    return `"${value}"`;
+                }
+                return value || '';
+            }).join(',');
+        });
+        
+        return [csvHeader, ...csvRows].join('\n');
+    }
+
+    /**
+     * Generate trial data as Blob for upload
+     */
+    generateTrialCSVBlob() {
+        const csvContent = this.generateTrialCSVContent();
+        return new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    }
+    
+    /**
+     * Export mouse tracking data as CSV (original download method)
+     */
+    exportMouseData() {
+        const csvContent = this.generateMouseCSVContent();
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `mouse_data_ppt${this.participantData.participant_id}_s${this.participantData.session}_${timestamp}.csv`;
+        
+        this.downloadCSV(csvContent, filename);
+        console.log(`Mouse tracking data exported: ${filename}`);
+    }
+
+    /**
+     * Generate mouse tracking CSV content (for both download and upload)
+     */
+    generateMouseCSVContent() {
+        if (this.mouseTrackingData.length === 0) {
+            console.warn('No mouse tracking data to generate');
+            return 'No data available\n';
+        }
+        
+        const fieldNames = Object.keys(this.mouseTrackingData[0]);
+        const csvHeader = fieldNames.join(',');
+        
+        const csvRows = this.mouseTrackingData.map(record => {
+            return fieldNames.map(field => record[field] || '').join(',');
+        });
+        
+        return [csvHeader, ...csvRows].join('\n');
+    }
+
+    /**
+     * Generate mouse tracking data as Blob for upload
+     */
+    generateMouseCSVBlob() {
+        const csvContent = this.generateMouseCSVContent();
+        return new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    }
+    
+    /**
+     * Export participant information as CSV (original download method)
+     */
+    exportParticipantInfo() {
+        const csvContent = this.generateParticipantCSVContent();
+        const filename = `participant_${this.participantData.participant_id}_information.csv`;
+        
+        this.downloadCSV(csvContent, filename);
+        console.log(`Participant information exported: ${filename}`);
+    }
+
+    /**
+     * Generate participant information CSV content (for both download and upload)
+     */
+    generateParticipantCSVContent() {
+        const participantInfo = {
+            participant_id: this.participantData.participant_id,
+            email: this.participantData.email,
+            session: this.participantData.session,
+            date: this.participantData.date,
+            experiment_start_time: this.participantData.experiment_start_time,
+            screen_resolution: this.participantData.screen_resolution,
+            viewport_size: this.participantData.viewport_size,
+            device_pixel_ratio: this.participantData.device_pixel_ratio,
+            user_agent: this.participantData.user_agent,
+            platform: this.participantData.platform
+        };
+        
+        // Create CSV header
+        const csvHeader = Object.keys(participantInfo).join(',');
+        
+        // Create CSV row
+        const csvRow = Object.values(participantInfo).map(value => {
+            // Handle string values that might contain commas
+            if (typeof value === 'string' && value.includes(',')) {
+                return `"${value}"`;
+            }
+            return value || '';
+        }).join(',');
+        
+        return [csvHeader, csvRow].join('\n');
+    }
+
+    /**
+     * Generate participant information as Blob for upload
+     */
+    generateParticipantCSVBlob() {
+        const csvContent = this.generateParticipantCSVContent();
+        return new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    }
+    
+    /**
+     * Export all data (trial, mouse data, and participant information)
+     */
+    exportAllData() {
+        console.log('Exporting all single-round experiment data...');
+        this.exportTrialData();
+        this.exportMouseData();
+        this.exportParticipantInfo();
+        
+        // Log summary
+        const summary = this.getSummaryStats();
+        console.log('Export complete. Summary:', summary);
+    }
+    
+    /**
+     * Helper method to download CSV content
+     */
+    downloadCSV(csvContent, filename) {
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
+        link.style.visibility = 'hidden';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+    
+    /**
+     * Generate trial heatmaps for all trials with actual file generation
+     */
+    async generateAllTrialHeatmaps(progressCallback) {
+        console.log('Starting heatmap generation for all trials...');
+        
+        if (typeof JSZip === 'undefined') {
+            throw new Error('JSZip library not loaded - cannot generate heatmap ZIP');
+        }
+        
+        
+        const totalTrials = this.trialData.length;
+        const totalHeatmaps = totalTrials * 2; // 2 styles per trial
+        const results = { success: 0, errors: 0 };
+        const zip = new JSZip();
+        
+        // Create timestamp for filename
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        
+        for (let i = 0; i < totalTrials; i++) {
+            const trial = this.trialData[i];
+            
+            try {
+                // Get mouse data for this trial
+                const mouseData = this.getMouseDataForTrial(trial.trial_idx);
+                
+                if (mouseData.length === 0) {
+                    console.warn(`No mouse data for trial ${trial.trial_idx}, creating empty heatmaps`);
+                }
+                
+                // Generate BOTH styles of heatmaps
+                const baseFilename = `trial_T${String(trial.trial_idx).padStart(2, '0')}_${trial.trial_type}`;
+                
+                // 1. Generate Custom Style heatmap
+                if (progressCallback) {
+                    progressCallback((i * 2) + 1, totalHeatmaps, `Generating custom heatmap for trial ${trial.trial_idx}`);
+                }
+                
+                const customHeatmapBlob = await this.generateTrialHeatmapImage(trial, mouseData);
+                const customFilename = `Grid-based_Density_Calculation/${baseFilename}_custom.png`;
+                zip.file(customFilename, customHeatmapBlob);
+                results.success++;
+                
+                // 2. Generate MouseView Style heatmap
+                if (progressCallback) {
+                    progressCallback((i * 2) + 2, totalHeatmaps, `Generating Simpleheat.js heatmap for trial ${trial.trial_idx}`);
+                }
+                
+                const mouseViewHeatmapBlob = await this.generateTrialHeatmapImageMouseViewStyle(trial, mouseData);
+                const mouseViewFilename = `Simpleheat.js_Library/${baseFilename}_mouseview.png`;
+                zip.file(mouseViewFilename, mouseViewHeatmapBlob);
+                results.success++;
+                
+                // Small delay to prevent browser blocking
+                if (i % 5 === 0) {
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                }
+                
+            } catch (error) {
+                console.error(`Error generating heatmap for trial ${trial.trial_idx}:`, error);
+                results.errors++;
+            }
+        }
+        
+        // Generate and download ZIP if any heatmaps were created
+        if (results.success > 0) {
+            try {
+                console.log('Generating ZIP file...');
+                const zipBlob = await zip.generateAsync({
+                    type: 'blob',
+                    compression: 'DEFLATE',
+                    compressionOptions: { level: 6 }
+                });
+                
+                // Trigger download
+                const filename = `trial_heatmaps_ppt${this.participantData.participant_id}_${timestamp}.zip`;
+                this.downloadBlob(zipBlob, filename);
+                
+                console.log(`Heatmap ZIP download triggered: ${filename}`);
+            } catch (error) {
+                console.error('Error creating ZIP file:', error);
+                results.errors++;
+            }
+        }
+        
+        console.log(`Heatmap generation complete: ${results.success} successful, ${results.errors} errors`);
+        return results;
+    }
+
+    /**
+     * Generate trial heatmaps as Blob for upload (without downloading)
+     */
+    async generateAllTrialHeatmapsAsBlob(progressCallback) {
+        console.log('Generating heatmap blob for upload...');
+        
+        if (typeof JSZip === 'undefined') {
+            throw new Error('JSZip library not loaded - cannot generate heatmap ZIP');
+        }
+        
+        const totalTrials = this.trialData.length;
+        const totalHeatmaps = totalTrials * 2; // 2 styles per trial
+        const zip = new JSZip();
+        
+        for (let i = 0; i < totalTrials; i++) {
+            const trial = this.trialData[i];
+            
+            try {
+                // Get mouse data for this trial
+                const mouseData = this.getMouseDataForTrial(trial.trial_idx);
+                
+                // Generate BOTH styles of heatmaps
+                const baseFilename = `trial_T${String(trial.trial_idx).padStart(2, '0')}_${trial.trial_type}`;
+                
+                // 1. Generate Custom Style heatmap
+                if (progressCallback) {
+                    progressCallback((i * 2) + 1, totalHeatmaps, `Generating custom heatmap for trial ${trial.trial_idx}`);
+                }
+                
+                const customHeatmapBlob = await this.generateTrialHeatmapImage(trial, mouseData);
+                const customFilename = `Grid-based_Density_Calculation/${baseFilename}_custom.png`;
+                zip.file(customFilename, customHeatmapBlob);
+                
+                // 2. Generate MouseView Style heatmap
+                if (progressCallback) {
+                    progressCallback((i * 2) + 2, totalHeatmaps, `Generating Simpleheat.js heatmap for trial ${trial.trial_idx}`);
+                }
+                
+                const mouseViewHeatmapBlob = await this.generateTrialHeatmapImageMouseViewStyle(trial, mouseData);
+                const mouseViewFilename = `Simpleheat.js_Library/${baseFilename}_mouseview.png`;
+                zip.file(mouseViewFilename, mouseViewHeatmapBlob);
+                
+                // Small delay to prevent browser blocking
+                if (i % 5 === 0) {
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                }
+                
+            } catch (error) {
+                console.error(`Error generating heatmap for trial ${trial.trial_idx}:`, error);
+            }
+        }
+        
+        // Generate and return ZIP blob (don't download)
+        console.log('Generating ZIP blob...');
+        const zipBlob = await zip.generateAsync({
+            type: 'blob',
+            compression: 'DEFLATE',
+            compressionOptions: { level: 6 }
+        });
+        
+        console.log('Heatmap ZIP blob generated successfully');
+        return zipBlob;
+    }
+    
+    /**
+     * Get mouse data for a specific trial
+     */
+    getMouseDataForTrial(trialIdx) {
+        return this.mouseTrackingData.filter(point => point.trial_idx === trialIdx);
+    }
+    
+    /**
+     * Generate heatmap image for a single trial
+     */
+    async generateTrialHeatmapImage(trial, mouseData) {
+        // Create canvas for heatmap generation
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas size to trial viewport if stored, otherwise current viewport
+        canvas.width = trial.viewport_width || window.innerWidth;
+        canvas.height = trial.viewport_height || window.innerHeight;
+        
+        // Draw black background to match experiment
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw title and trial info
+        this.drawTrialInfo(ctx, trial, canvas.width, canvas.height);
+        
+        // Draw heatmap if we have mouse data
+        if (mouseData && mouseData.length > 0) {
+            this.drawHeatPoints(ctx, mouseData);
+        } else {
+            // Draw "No Data" message
+            ctx.fillStyle = '#666666';
+            ctx.font = '24px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('No mouse tracking data available', canvas.width / 2, canvas.height / 2);
+        }
+        
+        // Convert canvas to blob
+        return new Promise((resolve, reject) => {
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    resolve(blob);
+                } else {
+                    reject(new Error('Failed to generate canvas blob'));
+                }
+            }, 'image/png', 0.8);
+        });
+    }
+    
+    /**
+     * Generate MouseView-style heatmap image for a single trial
+     */
+    async generateTrialHeatmapImageMouseViewStyle(trial, mouseData) {
+        // Create canvas for heatmap generation
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas size to trial viewport if stored, otherwise current viewport
+        canvas.width = trial.viewport_width || window.innerWidth;
+        canvas.height = trial.viewport_height || window.innerHeight;
+        
+        // Draw black background to match experiment
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Generate MouseView-style heatmap if we have mouse data
+        if (mouseData && mouseData.length > 0) {
+            await this.drawMouseViewStyleHeatmap(canvas, mouseData);
+        } else {
+            // Draw "No Data" message
+            ctx.fillStyle = '#666666';
+            ctx.font = '24px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('No mouse tracking data available', canvas.width / 2, canvas.height / 2);
+        }
+        
+        // Add trial info overlay on top (Option B)
+        this.drawTrialInfo(ctx, trial, canvas.width, canvas.height);
+        
+        // Convert canvas to blob
+        return new Promise((resolve, reject) => {
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    resolve(blob);
+                } else {
+                    reject(new Error('Failed to generate MouseView-style canvas blob'));
+                }
+            }, 'image/png', 0.8);
+        });
+    }
+    
+    /**
+     * Draw MouseView-style heatmap using simpleheat.js
+     */
+    async drawMouseViewStyleHeatmap(canvas, mouseData) {
+        return new Promise((resolve, reject) => {
+            try {
+                // Check if simpleheat is available
+                if (typeof simpleheat === 'undefined') {
+                    throw new Error('simpleheat library not loaded');
+                }
+                
+                // Format data for simpleheat: [[x,y,intensity], ...]
+                const formattedData = mouseData.map(point => [
+                    point.mouse_x, 
+                    point.mouse_y, 
+                    1 // Fixed intensity like MouseView does
+                ]);
+                
+                // Create simpleheat instance
+                const heat = simpleheat(canvas);
+                heat.data(formattedData);
+                heat.radius(20, 90); // MouseView's exact parameters: 20px base, 90px blur
+                heat.draw();
+                
+                // simpleheat draws synchronously, so we can resolve immediately
+                resolve();
+                
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+    
+    /**
+     * Draw trial information on heatmap
+     */
+    drawTrialInfo(ctx, trial, width, height) {
+        // Set text style
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'left';
+        
+        // Draw trial information in top-left corner
+        const info = [
+            `Trial: ${trial.trial_idx}`,
+            `Type: ${trial.trial_type}`,
+            `Duration: ${Math.round(trial.trial_duration_ms / 1000)}s`
+        ];
+        
+        // Draw background box for text
+        const padding = 10;
+        const lineHeight = 20;
+        const boxHeight = info.length * lineHeight + padding * 2;
+        const boxWidth = 350;
+        
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(10, 10, boxWidth, boxHeight);
+        
+        // Draw text
+        ctx.fillStyle = '#ffffff';
+        info.forEach((line, index) => {
+            ctx.fillText(line, 20, 30 + (index * lineHeight));
+        });
+        
+        // Draw timestamp in bottom-right
+        ctx.textAlign = 'right';
+        ctx.font = '12px Arial';
+        ctx.fillStyle = '#888888';
+        const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
+        ctx.fillText(`Generated: ${timestamp}`, width - 20, height - 20);
+    }
+    
+    /**
+     * Draw heat points on canvas using mouse tracking data
+     */
+    drawHeatPoints(ctx, mouseData) {
+        // Calculate heat intensity based on point density
+        const intensityMap = new Map();
+        const gridSize = 20; // 20px grid for heat calculation
+        
+        // Count points in each grid cell
+        mouseData.forEach(point => {
+            const gridX = Math.floor(point.mouse_x / gridSize);
+            const gridY = Math.floor(point.mouse_y / gridSize);
+            const key = `${gridX},${gridY}`;
+            intensityMap.set(key, (intensityMap.get(key) || 0) + 1);
+        });
+        
+        // Find max intensity for normalization
+        const maxIntensity = intensityMap.size > 0 ? Math.max(...intensityMap.values()) : 1;
+        
+        // Draw heat points
+        mouseData.forEach((point) => {
+            const gridX = Math.floor(point.mouse_x / gridSize);
+            const gridY = Math.floor(point.mouse_y / gridSize);
+            const key = `${gridX},${gridY}`;
+            const intensity = intensityMap.get(key) / maxIntensity;
+            
+            // Create radial gradient for heat effect
+            const radius = 15 + (intensity * 25); // Radius based on intensity
+            const gradient = ctx.createRadialGradient(
+                point.mouse_x, point.mouse_y, 0,
+                point.mouse_x, point.mouse_y, radius
+            );
+            
+            // Color based on intensity (blue -> red -> white)
+            const alpha = 0.1 + (intensity * 0.4); // Base transparency
+            if (intensity < 0.3) {
+                // Cool areas - blue
+                gradient.addColorStop(0, `rgba(0, 100, 255, ${alpha})`);
+                gradient.addColorStop(1, `rgba(0, 50, 255, 0)`);
+            } else if (intensity < 0.7) {
+                // Medium areas - red
+                gradient.addColorStop(0, `rgba(255, 100, 0, ${alpha})`);
+                gradient.addColorStop(1, `rgba(255, 0, 0, 0)`);
+            } else {
+                // Hot areas - white/yellow
+                gradient.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
+                gradient.addColorStop(0.5, `rgba(255, 255, 0, ${alpha * 0.7})`);
+                gradient.addColorStop(1, `rgba(255, 100, 0, 0)`);
+            }
+            
+            // Draw heat point
+            ctx.globalCompositeOperation = 'screen'; // Additive blending
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(point.mouse_x, point.mouse_y, radius, 0, 2 * Math.PI);
+            ctx.fill();
+        });
+        
+        // Reset composite operation
+        ctx.globalCompositeOperation = 'source-over';
+    }
+    
+    /**
+     * Download blob as file
+     */
+    downloadBlob(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        
+        link.href = url;
+        link.download = filename;
+        link.style.display = 'none';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Clean up object URL
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+}
+
+// Export for use in other modules
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = DataManager;
+} else if (typeof window !== 'undefined') {
+    window.DataManager = DataManager;
+}

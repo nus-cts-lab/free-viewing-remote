@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Free Viewing Task</title>
+    <link rel="stylesheet" href="css/experiment.css">
+    <style>
+        .login-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: #000;
+            color: #fff;
+        }
+        
+        .login-content {
+            text-align: center;
+            max-width: 400px;
+            padding: 40px;
+            transform: translateY(-30px);
+        }
+        
+        .login-title {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+        
+        .login-subtitle {
+            font-size: 16px;
+            color: #ccc;
+            margin-bottom: 40px;
+            line-height: 1.5;
+        }
+        
+        .login-form {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .form-group {
+            text-align: left;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #ddd;
+            font-weight: 500;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #444;
+            border-radius: 8px;
+            background: #222;
+            color: #fff;
+            font-size: 16px;
+            box-sizing: border-box;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+        
+        .login-button {
+            width: 100%;
+            padding: 14px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 10px;
+        }
+        
+        .login-button:hover {
+            background: #1976D2;
+        }
+        
+        .login-button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        
+        .error-message {
+            color: #f44336;
+            font-size: 14px;
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(244, 67, 54, 0.1);
+            border: 1px solid rgba(244, 67, 54, 0.3);
+            border-radius: 6px;
+            display: none;
+        }
+        
+        .back-link {
+            margin-top: 30px;
+            font-size: 14px;
+        }
+        
+        .back-link a {
+            color: #2196F3;
+            text-decoration: none;
+        }
+        
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+        
+        .loading {
+            display: none;
+            margin-top: 10px;
+            font-size: 14px;
+            color: #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-content">
+            <h1 class="login-title">Admin Access</h1>
+            <p class="login-subtitle">
+                Enter your password to access the data dashboard
+            </p>
+            
+            <form class="login-form" id="admin-login-form">
+                <div class="form-group">
+                    <label for="password" class="form-label">Password</label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        class="form-input"
+                        placeholder="Enter admin password"
+                        required
+                        autocomplete="current-password"
+                    />
+                </div>
+                
+                <button type="submit" class="login-button" id="login-button">
+                    Login
+                </button>
+                
+                <div class="error-message" id="error-message">
+                    Invalid password. Please try again.
+                </div>
+                
+                <div class="loading" id="loading">
+                    Verifying credentials...
+                </div>
+            </form>
+            
+            <div class="back-link">
+                <a href="index.html">← Back to Home</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simple admin authentication (academic use)
+        const ADMIN_PASSWORD = 'free2025viewing@cts'; // Change this to your desired password
+        
+        const loginForm = document.getElementById('admin-login-form');
+        const passwordInput = document.getElementById('password');
+        const loginButton = document.getElementById('login-button');
+        const errorMessage = document.getElementById('error-message');
+        const loading = document.getElementById('loading');
+        
+        // Check if already logged in
+        if (localStorage.getItem('adminLoggedIn') === 'true') {
+            window.location.href = 'admin-dashboard.html';
+        }
+        
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const password = passwordInput.value.trim();
+            
+            if (!password) {
+                showError('Please enter a password');
+                return;
+            }
+            
+            // Show loading state
+            showLoading(true);
+            
+            // Simulate authentication delay (for UX)
+            setTimeout(() => {
+                if (password === ADMIN_PASSWORD) {
+                    // Success - store login state and redirect
+                    localStorage.setItem('adminLoggedIn', 'true');
+                    localStorage.setItem('adminLoginTime', Date.now().toString());
+                    window.location.href = 'admin-dashboard.html';
+                } else {
+                    // Failed authentication
+                    showLoading(false);
+                    showError('Invalid password. Please try again.');
+                    passwordInput.value = '';
+                    passwordInput.focus();
+                }
+            }, 800);
+        });
+        
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            
+            // Hide error after 5 seconds
+            setTimeout(() => {
+                errorMessage.style.display = 'none';
+            }, 5000);
+        }
+        
+        function showLoading(show) {
+            if (show) {
+                loginButton.disabled = true;
+                loginButton.textContent = 'Verifying...';
+                loading.style.display = 'block';
+                errorMessage.style.display = 'none';
+            } else {
+                loginButton.disabled = false;
+                loginButton.textContent = 'Login';
+                loading.style.display = 'none';
+            }
+        }
+        
+        // Auto-focus password field
+        passwordInput.focus();
+        
+        // Handle Enter key
+        passwordInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                loginForm.dispatchEvent(new Event('submit'));
+            }
+        });
+    </script>
+</body>
+</html>

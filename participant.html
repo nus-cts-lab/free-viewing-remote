@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Images Free Viewing Task - MouseView</title>
+    <link rel="stylesheet" href="css/experiment.css">
+    <link rel="stylesheet" href="css/mouseview.css">
+    <style>
+        /* Custom styles for single-round experiment */
+        .experiment-summary {
+            background: rgba(76, 175, 80, 0.1);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 2px solid rgba(76, 175, 80, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div id="experiment-container">
+        
+        <!-- Welcome Screen -->
+        <div id="welcome-screen" class="screen">
+            <div class="content-wrapper">
+                <h1>Welcome!</h1>
+                <div class="instructions">
+                    <p>In this experiment, you will view a series of images using your mouse cursor as a "spotlight" of attention. Only the area around your cursor will be visible clearly, while other areas will be blurred.</p>
+                    
+                    <p>You will complete 20 trials. Move your mouse to look at the images - it acts as your "spotlight" of attention.</p>
+                    
+                    <p>Each trial begins when you click the "Start" or "Next" button. Four images will then appear in the four quadrants of the screen.</p>
+                    
+                    <p><strong>Important:</strong> Move your mouse cursor naturally to explore the images.</p>
+                    
+                    <p>When you are ready, press <strong>SPACEBAR</strong> to begin.</p>
+                </div>
+                <button id="start-experiment" class="primary-button">Press SPACE to Begin</button>
+            </div>
+        </div>
+
+        <!-- Participant Info Screen -->
+        <div id="participant-screen" class="screen active">
+            <div class="content-wrapper">
+                <h2>Participant Information</h2>
+                <form id="participant-form">
+                    <div class="form-group">
+                        <label for="participant-id">Participant ID:</label>
+                        <input type="text" id="participant-id" name="participant-id" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="participant-email">Email:</label>
+                        <input type="email" id="participant-email" name="participant-email" required 
+                               style="width: 100% !important; padding: 10px !important; font-size: 1.1em !important; 
+                                      border: 2px solid #666 !important; border-radius: 5px !important; 
+                                      background-color: #333 !important; color: #fff !important; 
+                                      box-sizing: border-box !important; -webkit-appearance: none !important; 
+                                      -moz-appearance: none !important; appearance: none !important;">
+                    </div>
+                    <div class="form-group">
+                        <label for="session">Session:</label>
+                        <input type="text" id="session" name="session" value="001" required>
+                    </div>
+                    <button type="submit" class="primary-button">Start Experiment</button>
+                </form>
+                
+                <div class="back-link" style="margin-top: 30px; font-size: 14px;">
+                    <a href="index.html" style="color: #4CAF50; text-decoration: none;">← Back to Home</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Experiment Screen -->
+        <div id="experiment-screen" class="screen">
+            <!-- Center Start Button for First Main Trial -->
+            <div id="main-start-button" class="center-button" style="display: none;">
+                <button class="start-button">Start</button>
+                <p class="button-instruction">Click to start first trial</p>
+            </div>
+            
+            <!-- Center Next Button for Between Trials -->
+            <div id="next-trial-button" class="center-button" style="display: none;">
+                <button class="next-button">Next</button>
+                <p class="button-instruction">Click to continue to next trial</p>
+            </div>
+            
+            
+            <!-- Image Container -->
+            <div id="image-container">
+                <img id="top-left-image" class="stimulus-image" alt="Top Left Image">
+                <img id="top-right-image" class="stimulus-image" alt="Top Right Image">
+                <img id="bottom-left-image" class="stimulus-image" alt="Bottom Left Image">
+                <img id="bottom-right-image" class="stimulus-image" alt="Bottom Right Image">
+                
+            </div>
+            
+            <!-- Continue Button (for manual progression) -->
+            <button id="continue-trial" class="continue-button" style="display: none;">Continue to Next Trial</button>
+        </div>
+
+        <!-- Upload Screen -->
+        <div id="upload-screen" class="screen">
+            <div class="content-wrapper">
+                <h2>Saving Your Data</h2>
+                <div class="upload-container" style="text-align: center; padding: 40px 20px;">
+                    <div class="upload-icon" style="font-size: 48px; margin-bottom: 20px;">☁️</div>
+                    <p id="upload-status" style="font-size: 18px; margin-bottom: 20px; color: #fff;">Preparing to save your data...</p>
+                    
+                    <div class="progress-container" style="margin: 30px 0;">
+                        <div class="progress-bar-container" style="width: 100%; height: 20px; background: #333; border-radius: 10px; overflow: hidden; border: 1px solid #666;">
+                            <div id="upload-progress-bar" style="height: 100%; background: linear-gradient(90deg, #4CAF50, #45a049); width: 0%; transition: width 0.3s ease;"></div>
+                        </div>
+                        <p id="upload-progress-text" style="margin-top: 10px; font-size: 14px; color: #aaa;">0/4 files</p>
+                    </div>
+                    
+                    <div class="upload-details" style="margin-top: 30px; padding: 20px; background: rgba(76, 175, 80, 0.1); border-radius: 8px; border: 1px solid rgba(76, 175, 80, 0.3);">
+                        <h4 style="margin-bottom: 15px; color: #4CAF50;">What's being saved:</h4>
+                        <ul style="text-align: left; display: inline-block; color: #ccc;">
+                            <li>Trial data and responses (CSV)</li>
+                            <li>Mouse movement tracking (CSV)</li>
+                            <li>Participant information (CSV)</li>
+                            <li>Visual heatmaps (ZIP)</li>
+                        </ul>
+                        <p style="margin-top: 15px; font-size: 14px; color: #999;">
+                            Your data will be securely stored and accessible to authorized researchers.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Success Screen -->
+        <div id="upload-success-screen" class="screen">
+            <div class="content-wrapper">
+                <div style="text-align: center; padding: 40px 20px;">
+                    <div style="font-size: 64px; margin-bottom: 20px;">✅</div>
+                    <h2 style="color: #4CAF50; margin-bottom: 20px;">Data Saved Successfully!</h2>
+                    <p style="font-size: 18px; margin-bottom: 30px; color: #ccc;">
+                        Thank you for participating in this research study.
+                    </p>
+                    <div style="background: rgba(76, 175, 80, 0.1); padding: 20px; border-radius: 8px; border: 1px solid rgba(76, 175, 80, 0.3);">
+                        <p style="color: #4CAF50; margin-bottom: 10px;">
+                            <strong>Your experiment data has been securely uploaded.</strong>
+                        </p>
+                        <p style="color: #aaa; font-size: 14px;">
+                            No further action is required from you. You may now close this window.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- End Screen -->
+        <div id="end-screen" class="screen">
+            <div class="content-wrapper">
+                <h2>Experiment Complete!</h2>
+                <p>🎉 Congratulations! You have completed all 20 trials.</p>
+                <div class="instructions">
+                    <p><strong>Data Collection Complete</strong></p>
+                    <p>Please click the buttons below to download your data files for analysis.</p>
+                </div>
+                <div id="download-buttons" style="display: flex; justify-content: space-between; gap: 20px; margin: 20px 0;">
+                    <div style="display: flex; flex-direction: column; gap: 15px; flex: 1;">
+                        <button id="download-trial-data" class="primary-button">📄 Download All Trial Data (CSV)</button>
+                        <button id="download-mouse-data" class="primary-button">🖱️ Download All Mouse Data (CSV)</button>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 15px; flex: 1;">
+                        <button id="download-participant-info" class="primary-button">👤 Download Participant Information (CSV)</button>
+                        <button id="download-trial-heatmaps" class="primary-button">🔥 Download All Heatmaps (ZIP)</button>
+                    </div>
+                </div>
+                <div id="heatmap-progress" style="display: none; margin: 20px 0; padding: 15px; background: rgba(0,0,0,0.1); border-radius: 5px;">
+                    <div style="margin-bottom: 10px; font-weight: bold;" id="heatmap-progress-text">Generating heatmaps...</div>
+                    <div style="background: #ddd; height: 20px; border-radius: 10px; overflow: hidden;">
+                        <div id="heatmap-progress-bar" style="width: 0%; height: 100%; background: #4CAF50; transition: width 0.3s;"></div>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 30px; color: #666; font-style: italic;">
+                    Refresh browser to restart experiment
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Loading Screen -->
+        <div id="loading-screen" class="screen">
+            <div class="content-wrapper">
+                <h2>Loading...</h2>
+                <div class="loading-spinner"></div>
+                <p id="loading-message">Preparing experiment...</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- MouseView Overlay -->
+    <canvas id="mouseview-overlay" class="mouseview-overlay"></canvas>
+
+    <!-- Scripts -->
+    <!-- JSZip library for creating ZIP files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- simpleheat.js library for MouseView-style heatmaps -->
+    <script src="https://cdn.jsdelivr.net/npm/simpleheat@0.4.0/simpleheat.min.js"></script>
+    <!-- Official MouseView.js library -->
+    <script src="https://mouseview-docs.netlify.app/MouseView.js" type="module"></script>
+    <!-- Configuration (load secrets first) -->
+    <script src="config/secrets.js"></script>
+    <!-- Supabase Client -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
+    <!-- Telegram Notifications -->
+    <script src="js/telegram-config.js"></script>
+    <script src="js/telegram-notifications.js"></script>
+    <!-- Your custom scripts -->
+    <script src="js/data-manager.js?v=2025-08-15-round-instructions"></script>
+    <script src="js/image-manager.js?v=2025-08-15-round-instructions"></script>
+    <script src="js/experiment.js?v=2025-08-15-round-instructions"></script>    <script type="module">
+        // Configure MouseView.js parameters and initialize experiment
+        window.addEventListener('load', () => {
+            // Initialize canvas dimensions for MouseView.js
+            const canvas = document.getElementById('mouseview-overlay');
+            if (canvas) {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                
+                // Update canvas size when window is resized
+                window.addEventListener('resize', () => {
+                    canvas.width = window.innerWidth;
+                    canvas.height = window.innerHeight;
+                });
+                
+                console.log('Canvas initialized:', canvas.width + 'x' + canvas.height);
+            }
+            
+            // Basic MouseView.js initialization (configuration happens only during trials)
+            if (typeof mouseview !== 'undefined') {
+                // Only set basic timing parameters globally
+                mouseview.timing.sampleRate = 16.66; // ~60Hz sampling rate
+                mouseview.params.overlayGaussian = 0; // Disable overlay blur for performance
+                
+                console.log('MouseView.js basic initialization complete');
+            }
+            
+            // Initialize your experiment
+            const experiment = new ExperimentController();
+            experiment.init();
+        });
+    </script>
+</body>
+</html>
