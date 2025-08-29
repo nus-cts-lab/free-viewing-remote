@@ -39,7 +39,7 @@ Every time a participant completes an experiment, you'll get a Telegram message 
 🆔 Session ID: EXP_20250828_p105_s001
 ✅ Status: completed
 
-🔗 View Dashboard: https://nus-cts-lab.github.io/free-viewing-remote/
+🔗 View Dashboard: https://szelingtan.github.io/free-viewing-private/admin-login.html
 ```
 
 **Notification includes:**
@@ -95,10 +95,11 @@ Note: The delete button permanently removes that participant's entire session (a
 
 ### **Recommended Workflow**
 
-1. ✅ Get notification → Download data when available
-2. ✅ Save files to your research folder
-3. ✅ Delete from dashboard
-4. ✅ Analyze your local files
+1. ✅ Enter /start at @free_viewing_bot (only need to do this once)
+2. ✅ Upon getting notification → Download data when available
+3. ✅ Save files to your research folder
+4. ✅ Delete from dashboard
+5. ✅ Analyze your local files
 
 ---
 
@@ -106,7 +107,7 @@ Note: The delete button permanently removes that participant's entire session (a
 
 ### **Sharing the Experiment Link**
 
-Send participants this link: https://free-viewing-remote.vercel.app/
+Send participants this link: https://szelingtan.github.io/free-viewing-private/index.html
 
 ### **Participant Instructions**
 
