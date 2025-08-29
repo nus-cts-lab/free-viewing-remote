@@ -75,6 +75,10 @@ Each download includes:
 - **Participant info** (CSV) - ID, email, session details
 - **Heatmaps** (ZIP) - Visual attention pattern images
 
+**File Format:** All data is packaged as a single ZIP file named `EXP_DATE_ParticipantID_SessionNumber_data.zip` (e.g., `EXP_20250828_p105_s001_data.zip`)
+
+**⚠️ VERY Important:** Each participant should have a **unique combination** of Participant ID and Session Number. If you need to reuse the same ID/session combination, ensure you have **downloaded and deleted** the previous participant's data first to avoid data conflicts.
+
 ---
 
 ## ⚠️ **Important: Data Management**
