@@ -14,28 +14,27 @@ class TelegramNotifications {
         this.supabase = supabaseClient;
     }
     
-    // Send notification to a single chat ID
+    // Send notification to a single chat ID via API route
     async sendMessageToChat(chatId, message) {
         try {
-            const response = await fetch(`${TELEGRAM_CONFIG.API_URL}/sendMessage`, {
+            const response = await fetch('/api/telegram-notify', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    chat_id: chatId,
-                    text: message,
-                    disable_web_page_preview: true
+                    chatId: chatId,
+                    message: message
                 })
             });
             
             const result = await response.json();
             
-            if (result.ok) {
+            if (result.success) {
                 console.log(`✅ Telegram notification sent to ${chatId}`);
                 return true;
             } else {
-                console.error(`❌ Failed to send to ${chatId}:`, result.description);
+                console.error(`❌ Failed to send to ${chatId}:`, result.error);
                 return false;
             }
         } catch (error) {

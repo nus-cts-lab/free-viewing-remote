@@ -8,10 +8,10 @@ echo "Building secrets.js from environment variables..."
 cat > config/secrets.js << EOF
 /**
  * Configuration Secrets - Generated from Environment Variables
+ * Note: TELEGRAM_BOT_TOKEN moved to server-side API route for security
  */
 
 window.SECRETS = {
-    TELEGRAM_BOT_TOKEN: "${TELEGRAM_BOT_TOKEN}",
     SUPABASE_URL: "${SUPABASE_URL}",
     SUPABASE_ANON_KEY: "${SUPABASE_ANON_KEY}"
 };
