@@ -106,7 +106,7 @@ Note: The delete button permanently removes that participant's entire session (a
 
 ### **Sharing the Experiment Link**
 
-Send participants this link: https://nus-cts-lab.github.io/free-viewing-remote/
+Send participants this link: https://free-viewing-remote.vercel.app/
 
 ### **Participant Instructions**
 
